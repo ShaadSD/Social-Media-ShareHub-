@@ -10,7 +10,7 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.authtoken.models import Token
-# for sending email
+
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.shortcuts import redirect
@@ -38,7 +38,7 @@ class UserRegistrationApiView(APIView):
             print("token ", token)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             print("uid ", uid)
-            confirm_link = f"http://127.0.0.1:8000/api/user/active/{uid}/{token}"
+            confirm_link = f"https://social-media-sharehub.onrender.com/api/user/active/{uid}/{token}"
             email_subject = "Confirm Your Email"
             email_body = render_to_string('confirm_email.html', {'confirm_link' : confirm_link})
             
@@ -134,7 +134,7 @@ class CustomResetPasswordRequestToken(APIView):
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        reset_link = f'http://127.0.0.1:5500/reset_password_confirm.html?uid={uid}&token={token}'
+        reset_link = f'https://social-media-sharehub.onrender.com/reset_password_confirm.html?uid={uid}&token={token}'
 
         email_subject = "Reset Your Password"
         email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
