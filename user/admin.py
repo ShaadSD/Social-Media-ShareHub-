@@ -1,6 +1,11 @@
 from django.contrib import admin
-from .models import AuthorAcount,Follower,Following
-admin.site.register(AuthorAcount)
+from .models import AuthorAccount,Follower
+
+
+class UserAdmin(admin.ModelAdmin):
+      list_display =['id','username', 'first_name', 'last_name', 'email']
+
+
+admin.site.register(AuthorAccount,UserAdmin)
+    
 admin.site.register(Follower)
-admin.site.register(Following)
-# Register your models here.

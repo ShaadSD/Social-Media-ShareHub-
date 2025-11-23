@@ -1,29 +1,33 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-class AuthorAcount(AbstractUser):
-    image = models.URLField(
-        max_length=200,
-        default="https://res.cloudinary.com/ds97wytcs/image/upload/v1725001777/m6idyx9e4rwnmxawgu8o.png"
-    )
+class AuthorAccount(AbstractUser):
+    image = models.URLField(max_length=200, default="https://res.cloudinary.com/ds97wytcs/image/upload/v1725001777/m6idyx9e4rwnmxawgu8o.png")
     bio = models.TextField(blank=True)
     about = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-class Follower(models.Model):
-    main_user = models.ForeignKey(AuthorAcount, related_name='followers', on_delete=models.CASCADE)
-    follower = models.ForeignKey(AuthorAcount, on_delete=models.CASCADE, related_name='following_users')
-    follower_username = models.CharField(max_length=30)
-    created_at = models.DateTimeField(auto_now_add=True) 
-
     def __str__(self):
-        return f'{self.follower_username} followed {self.main_user.username}'
+        return self.username
 
-class Following(models.Model):
-    main_user = models.ForeignKey(AuthorAcount, related_name='following', on_delete=models.CASCADE)
-    following = models.ForeignKey(AuthorAcount, on_delete=models.CASCADE, related_name='followers_users')
-    following_username = models.CharField(max_length=30)
+
+class Follower(models.Model):
+    main_user = models.ForeignKey(
+        AuthorAccount,
+        related_name='followers',
+        on_delete=models.CASCADE
+    )
+    follower = models.ForeignKey(
+        AuthorAccount,
+        related_name='following',
+        on_delete=models.CASCADE
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('main_user', 'follower')
+
     def __str__(self):
-        return f'{self.main_user.username} is following {self.following_username}'
+        return f"{self.follower.username} follows {self.main_user.username}"
+
+
