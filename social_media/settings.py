@@ -77,7 +77,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5500",
     "https://social-media-sharehub.onrender.com",
 ]
-
+CSRF_TRUSTED_ORIGINS = [
+    "https://social-media-sharehub.onrender.com",
+    "http://localhost:8000", 
+]
 
 ROOT_URLCONF = 'social_media.urls'
 
