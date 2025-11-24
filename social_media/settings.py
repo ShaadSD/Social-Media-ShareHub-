@@ -109,7 +109,7 @@ REST_FRAMEWORK = {
     ],
 }
 WSGI_APPLICATION = 'social_media.wsgi.application'
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 
 # Database
