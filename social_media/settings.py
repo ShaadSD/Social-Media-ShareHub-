@@ -33,7 +33,8 @@ SECRET_KEY = 'django-insecure-dh#mfhc^^2$hk-7=zx4-d%ux11e+u8!8&0vri46=-x463#fe18
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'social-media-sharehub.onrender.com']
+ALLOWED_HOSTS = ['*']
+
 
 
 
@@ -72,14 +73,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "https://social-media-sharehub.onrender.com",
-]
+
 CSRF_TRUSTED_ORIGINS = [
     "https://social-media-sharehub.onrender.com",
-    "http://localhost:8000", 
+    "http://127.0.0.1:8000", 
 ]
 
 ROOT_URLCONF = 'social_media.urls'
