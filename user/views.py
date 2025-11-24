@@ -22,29 +22,51 @@ from django.contrib.auth.hashers import check_password
 from django.utils.encoding import force_str
 from rest_framework.response import Response
 from rest_framework import status
+from django.conf import settings
+from sib_api_v3_sdk import ApiClient, Configuration, TransactionalEmailsApi
+from sib_api_v3_sdk.models import SendSmtpEmail
+
+
+
+
+def send_email_via_brevo(to_email, subject, html_content):
+    configuration = Configuration()
+    configuration.api_key['api-key'] = settings.BREVO_API_KEY
+
+    api_instance = TransactionalEmailsApi(ApiClient(configuration))
+
+    send_smtp_email = SendSmtpEmail(
+        to=[{"email": to_email}],
+        sender={"email": settings.DEFAULT_FROM_EMAIL, "name": "ShareHub"},
+        subject=subject,
+        html_content=html_content
+    )
+
+    try:
+        api_instance.send_transac_email(send_smtp_email)
+    except Exception as e:
+        print("Error sending email via Brevo:", e)
+
+
+
 
 class UserRegistrationApiView(APIView):
     permission_classes =[AllowAny]
     serializer_class = serializers.RegistrationSerializer
     
     def post(self, request):
-        
         serializer = self.serializer_class(data=request.data)
         
         if serializer.is_valid():
             user = serializer.save()
-            print(user)
             token = default_token_generator.make_token(user)
-            print("token ", token)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            print("uid ", uid)
-            confirm_link = f"https://social-media-sharehub.onrender.com/api/user/active/{uid}/{token}"
+            confirm_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}"
             email_subject = "Confirm Your Email"
-            email_body = render_to_string('confirm_email.html', {'confirm_link' : confirm_link})
-            
-            email = EmailMultiAlternatives(email_subject , '', to=[user.email])
-            email.attach_alternative(email_body, "text/html")
-            email.send()
+            email_body = render_to_string('confirm_email.html', {'confirm_link': confirm_link})
+
+            send_email_via_brevo(user.email, email_subject, email_body)
+
             return Response("Check your mail for confirmation")
         return Response(serializer.errors)
 

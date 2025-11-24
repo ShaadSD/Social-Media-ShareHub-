@@ -19,7 +19,10 @@ load_dotenv()
 env = environ.Env()
 environ.Env.read_env()
 
-
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Optional for dev/testing
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -63,13 +66,13 @@ INSTALLED_APPS = [
 # EMAIL_HOST_PASSWORD = env("EMAIL_PASSWORD")
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = env("EMAIL_HOST")
-EMAIL_PORT = int(env("EMAIL_PORT"))
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = env("EMAIL_HOST")
+# EMAIL_PORT = int(env("EMAIL_PORT"))
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+# EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 MIDDLEWARE = [
