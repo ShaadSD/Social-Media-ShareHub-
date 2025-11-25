@@ -53,14 +53,27 @@ INSTALLED_APPS = [
     'ShareHub',
     'contact',
     'corsheaders',
+    'anymail',
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env("EMAIL")
-EMAIL_HOST_PASSWORD = env("EMAIL_PASSWORD")
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = env("EMAIL")
+# EMAIL_HOST_PASSWORD = env("EMAIL_PASSWORD")
+
+
+
+ANYMAIL = {
+    "BREVO_API_KEY": env("BREVO_API_KEY"), 
+}
+
+EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend" 
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+SERVER_EMAIL = env("DEFAULT_FROM_EMAIL")
+
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

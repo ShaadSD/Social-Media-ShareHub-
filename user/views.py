@@ -26,46 +26,99 @@ from sib_api_v3_sdk import ApiClient, Configuration, TransactionalEmailsApi
 from sib_api_v3_sdk.models import SendSmtpEmail
 from django.conf import settings
 
+
+
 class UserRegistrationApiView(APIView):
-    permission_classes =[AllowAny]
+    permission_classes = [AllowAny]
     serializer_class = serializers.RegistrationSerializer
     
     def post(self, request):
-        
         serializer = self.serializer_class(data=request.data)
-        
         if serializer.is_valid():
             user = serializer.save()
-            print(user)
+            user.is_active = False  # initially inactive
+            user.save()
+
             token = default_token_generator.make_token(user)
-            print("token ", token)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            print("uid ", uid)
             confirm_link = f"https://social-media-sharehub.onrender.com/api/user/active/{uid}/{token}"
+
+            # Email setup using Anymail (Brevo API)
             email_subject = "Confirm Your Email"
-            email_body = render_to_string('confirm_email.html', {'confirm_link' : confirm_link})
-            
-            email = EmailMultiAlternatives(email_subject , '', to=[user.email])
+            email_body = render_to_string('confirm_email.html', {'confirm_link': confirm_link})
+
+            email = EmailMultiAlternatives(
+                subject=email_subject,
+                body="Please confirm your email",
+                to=[user.email],
+            )
             email.attach_alternative(email_body, "text/html")
-            email.send()
-            return Response("Check your mail for confirmation")
-        return Response(serializer.errors)
+            email.send()  # Brevo API handles sending
+
+            return Response({"detail": "Check your mail for confirmation"})
+        return Response(serializer.errors, status=400)
 
 
-def activate(request, uid64, token):
-    permission_classes =[AllowAny]
-    try:
-        uid = urlsafe_base64_decode(uid64).decode()
-        user = AuthorAccount._default_manager.get(pk=uid)
-    except(AuthorAccount.DoesNotExist):
-        user = None 
+def activate(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, uid64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uid64))
+            user = AuthorAccount.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, AuthorAccount.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            return redirect('https://social-media-sharehub.netlify.app')
+        else:
+            return redirect('https://social-media-sharehub.netlify.app/register')
+
+
+
+
+# class UserRegistrationApiView(APIView):
+#     permission_classes =[AllowAny]
+#     serializer_class = serializers.RegistrationSerializer
     
-    if user is not None and default_token_generator.check_token(user, token):
-        user.is_active = True
-        user.save()
-        return redirect('https://social-media-sharehub.netlify.app')
-    else:
-        return redirect('https://social-media-sharehub.netlify.app/register')
+#     def post(self, request):
+        
+#         serializer = self.serializer_class(data=request.data)
+        
+#         if serializer.is_valid():
+#             user = serializer.save()
+#             print(user)
+#             token = default_token_generator.make_token(user)
+#             print("token ", token)
+#             uid = urlsafe_base64_encode(force_bytes(user.pk))
+#             print("uid ", uid)
+#             confirm_link = f"https://social-media-sharehub.onrender.com/api/user/active/{uid}/{token}"
+#             email_subject = "Confirm Your Email"
+#             email_body = render_to_string('confirm_email.html', {'confirm_link' : confirm_link})
+            
+#             email = EmailMultiAlternatives(email_subject , '', to=[user.email])
+#             email.attach_alternative(email_body, "text/html")
+#             email.send()
+#             return Response("Check your mail for confirmation")
+#         return Response(serializer.errors)
+
+
+# def activate(request, uid64, token):
+#     permission_classes =[AllowAny]
+#     try:
+#         uid = urlsafe_base64_decode(uid64).decode()
+#         user = AuthorAccount._default_manager.get(pk=uid)
+#     except(AuthorAccount.DoesNotExist):
+#         user = None 
+    
+#     if user is not None and default_token_generator.check_token(user, token):
+#         user.is_active = True
+#         user.save()
+#         return redirect('https://social-media-sharehub.netlify.app')
+#     else:
+#         return redirect('https://social-media-sharehub.netlify.app/register')
     
 
 class UserLoginApiView(APIView):
@@ -116,8 +169,6 @@ class PasswordChangeView(generics.UpdateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
 class CustomResetPasswordRequestToken(APIView):
     permission_classes = [AllowAny]
 
@@ -125,30 +176,62 @@ class CustomResetPasswordRequestToken(APIView):
         email = request.data.get('email')
 
         if not email:
-            return Response({"error": "Email is required."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = AuthorAccount.objects.get(email=email)
         except AuthorAccount.DoesNotExist:
-            return Response({"error": "User with this email does not exist."},
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-
         reset_link = f'https://social-media-sharehub.onrender.com/reset_password_confirm.html?uid={uid}&token={token}'
 
         email_subject = "Reset Your Password"
         email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
-        email_message = EmailMultiAlternatives(email_subject, '', to=[email])
+
+        # Anymail / Brevo API
+        email_message = EmailMultiAlternatives(
+            subject=email_subject,
+            body="Follow the link to reset your password.",
+            to=[email]
+        )
         email_message.attach_alternative(email_body, "text/html")
-        email_message.send()
+        email_message.send()  # Brevo handles sending
 
-        return Response({"detail": "Check your email for password reset instructions."},
-                        status=status.HTTP_200_OK)
+        return Response({"detail": "Check your email for password reset instructions."}, status=status.HTTP_200_OK)
+
+
+# class CustomResetPasswordRequestToken(APIView):
+#     permission_classes = [AllowAny]
+
+#     def post(self, request, *args, **kwargs):
+#         email = request.data.get('email')
+
+#         if not email:
+#             return Response({"error": "Email is required."},
+#                             status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             user = AuthorAccount.objects.get(email=email)
+#         except AuthorAccount.DoesNotExist:
+#             return Response({"error": "User with this email does not exist."},
+#                             status=status.HTTP_404_NOT_FOUND)
+
+#         token = default_token_generator.make_token(user)
+#         uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+#         reset_link = f'https://social-media-sharehub.onrender.com/reset_password_confirm.html?uid={uid}&token={token}'
+
+#         email_subject = "Reset Your Password"
+#         email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
+#         email_message = EmailMultiAlternatives(email_subject, '', to=[email])
+#         email_message.attach_alternative(email_body, "text/html")
+#         email_message.send()
+
+#         return Response({"detail": "Check your email for password reset instructions."},
+#                         status=status.HTTP_200_OK)
     
-
 
 class CustomResetPasswordConfirm(APIView):
     permission_classes = [AllowAny]
@@ -158,30 +241,58 @@ class CustomResetPasswordConfirm(APIView):
         token = request.query_params.get('token')
 
         if not uidb64 or not token:
-            return Response({'error': 'UID and token are required.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'UID and token are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user_id = force_str(urlsafe_base64_decode(uidb64))
             user = AuthorAccount.objects.get(pk=user_id)
         except (TypeError, ValueError, OverflowError, AuthorAccount.DoesNotExist):
-            return Response({'error': 'Invalid user or token.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Invalid user or token.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not default_token_generator.check_token(user, token):
-            return Response({'error': 'Invalid or expired token.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
 
         new_password = request.data.get('new_password')
         if not new_password:
-            return Response({'error': 'New password is required.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'New password is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         user.set_password(new_password)
         user.save()
 
-        return Response({'detail': 'Password reset successful.'},
-                        status=status.HTTP_200_OK)
+        return Response({'detail': 'Password reset successful.'}, status=status.HTTP_200_OK)
+
+# class CustomResetPasswordConfirm(APIView):
+#     permission_classes = [AllowAny]
+
+#     def put(self, request, *args, **kwargs):
+#         uidb64 = request.query_params.get('uid')
+#         token = request.query_params.get('token')
+
+#         if not uidb64 or not token:
+#             return Response({'error': 'UID and token are required.'},
+#                             status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             user_id = force_str(urlsafe_base64_decode(uidb64))
+#             user = AuthorAccount.objects.get(pk=user_id)
+#         except (TypeError, ValueError, OverflowError, AuthorAccount.DoesNotExist):
+#             return Response({'error': 'Invalid user or token.'},
+#                             status=status.HTTP_400_BAD_REQUEST)
+
+#         if not default_token_generator.check_token(user, token):
+#             return Response({'error': 'Invalid or expired token.'},
+#                             status=status.HTTP_400_BAD_REQUEST)
+
+#         new_password = request.data.get('new_password')
+#         if not new_password:
+#             return Response({'error': 'New password is required.'},
+#                             status=status.HTTP_400_BAD_REQUEST)
+
+#         user.set_password(new_password)
+#         user.save()
+
+#         return Response({'detail': 'Password reset successful.'},
+#                         status=status.HTTP_200_OK)
 
 
 
