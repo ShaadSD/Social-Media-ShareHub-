@@ -78,6 +78,11 @@ CSRF_TRUSTED_ORIGINS = [
     "https://social-media-sharehub.onrender.com",
     "http://127.0.0.1:8000", 
 ]
+CORS_ALLOWED_ORIGINS = [
+    "https://social-media-sharehub.netlify.app",
+    "http://localhost:5173", 
+]
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'social_media.urls'
 
