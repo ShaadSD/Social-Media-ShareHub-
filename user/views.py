@@ -59,23 +59,19 @@ class UserRegistrationApiView(APIView):
         return Response(serializer.errors, status=400)
 
 
-def activate(APIView):
-    permission_classes = [AllowAny]
+def activate(request, uid64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uid64))
+        user = AuthorAccount.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, AuthorAccount.DoesNotExist):
+        user = None
 
-    def get(self, request, uid64, token):
-        try:
-            uid = force_str(urlsafe_base64_decode(uid64))
-            user = AuthorAccount.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, AuthorAccount.DoesNotExist):
-            user = None
-
-        if user is not None and default_token_generator.check_token(user, token):
-            user.is_active = True
-            user.save()
-            return redirect('https://social-media-sharehub.netlify.app')
-        else:
-            return redirect('https://social-media-sharehub.netlify.app/register')
-
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        return redirect('https://social-media-sharehub.netlify.app')
+    else:
+        return redirect('https://social-media-sharehub.netlify.app/register')
 
 
 
@@ -120,6 +116,7 @@ def activate(APIView):
 #     else:
 #         return redirect('https://social-media-sharehub.netlify.app/register')
     
+
 
 class UserLoginApiView(APIView):
     permission_classes = [AllowAny]
