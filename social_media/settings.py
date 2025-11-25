@@ -18,12 +18,8 @@ from dotenv import load_dotenv
 load_dotenv()
 env = environ.Env()
 environ.Env.read_env()
-BACKEND_URL = "https://social-media-sharehub.onrender.com"
 
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Optional for dev/testing
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")  # sender email
-FRONTEND_URL = env("FRONTEND_URL")  # frontend URL
-BREVO_API_KEY = env("BREVO_API_KEY")  # Brevo API key
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -59,22 +55,12 @@ INSTALLED_APPS = [
     'corsheaders',
 ]
 
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = env("EMAIL")
-# EMAIL_HOST_PASSWORD = env("EMAIL_PASSWORD")
-
-
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = env("EMAIL_HOST")
-# EMAIL_PORT = int(env("EMAIL_PORT"))
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-# EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env("EMAIL")
+EMAIL_HOST_PASSWORD = env("EMAIL_PASSWORD")
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
