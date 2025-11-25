@@ -18,11 +18,12 @@ from dotenv import load_dotenv
 load_dotenv()
 env = environ.Env()
 environ.Env.read_env()
+BACKEND_URL = "https://social-media-sharehub.onrender.com"
 
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Optional for dev/testing
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
-FRONTEND_URL = os.getenv("FRONTEND_URL")
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")  # sender email
+FRONTEND_URL = env("FRONTEND_URL")  # frontend URL
+BREVO_API_KEY = env("BREVO_API_KEY")  # Brevo API key
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 

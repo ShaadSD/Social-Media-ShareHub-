@@ -22,9 +22,9 @@ from django.contrib.auth.hashers import check_password
 from django.utils.encoding import force_str
 from rest_framework.response import Response
 from rest_framework import status
-from django.conf import settings
 from sib_api_v3_sdk import ApiClient, Configuration, TransactionalEmailsApi
 from sib_api_v3_sdk.models import SendSmtpEmail
+from django.conf import settings
 
 
 
@@ -32,7 +32,6 @@ from sib_api_v3_sdk.models import SendSmtpEmail
 def send_email_via_brevo(to_email, subject, html_content):
     configuration = Configuration()
     configuration.api_key['api-key'] = settings.BREVO_API_KEY
-
     api_instance = TransactionalEmailsApi(ApiClient(configuration))
 
     send_smtp_email = SendSmtpEmail(
@@ -50,25 +49,117 @@ def send_email_via_brevo(to_email, subject, html_content):
 
 
 
+
 class UserRegistrationApiView(APIView):
     permission_classes =[AllowAny]
     serializer_class = serializers.RegistrationSerializer
     
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
-        
         if serializer.is_valid():
             user = serializer.save()
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            confirm_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}"
+            confirm_link = f"{settings.BACKEND_URL}/api/user/active/{uid}/{token}/"
+
             email_subject = "Confirm Your Email"
             email_body = render_to_string('confirm_email.html', {'confirm_link': confirm_link})
 
             send_email_via_brevo(user.email, email_subject, email_body)
-
             return Response("Check your mail for confirmation")
         return Response(serializer.errors)
+
+
+
+
+
+
+
+class CustomResetPasswordRequestToken(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        if not email:
+            return Response({"error": "Email is required."}, status=400)
+
+        try:
+            user = AuthorAccount.objects.get(email=email)
+        except AuthorAccount.DoesNotExist:
+            return Response({"error": "User with this email does not exist."}, status=404)
+
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        reset_link = f"{settings.FRONTEND_URL}/reset_password_confirm.html?uid={uid}&token={token}"
+
+        email_subject = "Reset Your Password"
+        email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
+
+        send_email_via_brevo(user.email, email_subject, email_body)
+        return Response({"detail": "Check your email for password reset instructions."}, status=200)
+
+
+
+
+
+
+
+class CustomResetPasswordConfirm(APIView):
+    permission_classes = [AllowAny]
+
+    def put(self, request, *args, **kwargs):
+        uidb64 = request.query_params.get('uid')
+        token = request.query_params.get('token')
+        new_password = request.data.get('new_password')
+
+        if not uidb64 or not token or not new_password:
+            return Response({'error': 'UID, token and new_password are required.'}, status=400)
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(uidb64))
+            user = AuthorAccount.objects.get(pk=user_id)
+        except AuthorAccount.DoesNotExist:
+            return Response({'error': 'Invalid user or token.'}, status=400)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({'error': 'Invalid or expired token.'}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+        return Response({'detail': 'Password reset successful.'}, status=200)
+
+
+
+
+
+
+
+
+
+# class UserRegistrationApiView(APIView):
+#     permission_classes =[AllowAny]
+#     serializer_class = serializers.RegistrationSerializer
+    
+#     def post(self, request):
+        
+#         serializer = self.serializer_class(data=request.data)
+        
+#         if serializer.is_valid():
+#             user = serializer.save()
+#             print(user)
+#             token = default_token_generator.make_token(user)
+#             print("token ", token)
+#             uid = urlsafe_base64_encode(force_bytes(user.pk))
+#             print("uid ", uid)
+#             confirm_link = f"https://social-media-sharehub.onrender.com/api/user/active/{uid}/{token}"
+#             email_subject = "Confirm Your Email"
+#             email_body = render_to_string('confirm_email.html', {'confirm_link' : confirm_link})
+            
+#             email = EmailMultiAlternatives(email_subject , '', to=[user.email])
+#             email.attach_alternative(email_body, "text/html")
+#             email.send()
+#             return Response("Check your mail for confirmation")
+#         return Response(serializer.errors)
 
 
 def activate(request, uid64, token):
@@ -137,70 +228,70 @@ class PasswordChangeView(generics.UpdateAPIView):
 
 
 
-class CustomResetPasswordRequestToken(APIView):
-    permission_classes = [AllowAny]
+# class CustomResetPasswordRequestToken(APIView):
+#     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
+#     def post(self, request, *args, **kwargs):
+#         email = request.data.get('email')
 
-        if not email:
-            return Response({"error": "Email is required."},
-                            status=status.HTTP_400_BAD_REQUEST)
+#         if not email:
+#             return Response({"error": "Email is required."},
+#                             status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user = AuthorAccount.objects.get(email=email)
-        except AuthorAccount.DoesNotExist:
-            return Response({"error": "User with this email does not exist."},
-                            status=status.HTTP_404_NOT_FOUND)
+#         try:
+#             user = AuthorAccount.objects.get(email=email)
+#         except AuthorAccount.DoesNotExist:
+#             return Response({"error": "User with this email does not exist."},
+#                             status=status.HTTP_404_NOT_FOUND)
 
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
+#         token = default_token_generator.make_token(user)
+#         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        reset_link = f'https://social-media-sharehub.onrender.com/reset_password_confirm.html?uid={uid}&token={token}'
+#         reset_link = f'https://social-media-sharehub.onrender.com/reset_password_confirm.html?uid={uid}&token={token}'
 
-        email_subject = "Reset Your Password"
-        email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
-        email_message = EmailMultiAlternatives(email_subject, '', to=[email])
-        email_message.attach_alternative(email_body, "text/html")
-        email_message.send()
+#         email_subject = "Reset Your Password"
+#         email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
+#         email_message = EmailMultiAlternatives(email_subject, '', to=[email])
+#         email_message.attach_alternative(email_body, "text/html")
+#         email_message.send()
 
-        return Response({"detail": "Check your email for password reset instructions."},
-                        status=status.HTTP_200_OK)
+#         return Response({"detail": "Check your email for password reset instructions."},
+#                         status=status.HTTP_200_OK)
     
 
 
-class CustomResetPasswordConfirm(APIView):
-    permission_classes = [AllowAny]
+# class CustomResetPasswordConfirm(APIView):
+#     permission_classes = [AllowAny]
 
-    def put(self, request, *args, **kwargs):
-        uidb64 = request.query_params.get('uid')
-        token = request.query_params.get('token')
+#     def put(self, request, *args, **kwargs):
+#         uidb64 = request.query_params.get('uid')
+#         token = request.query_params.get('token')
 
-        if not uidb64 or not token:
-            return Response({'error': 'UID and token are required.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+#         if not uidb64 or not token:
+#             return Response({'error': 'UID and token are required.'},
+#                             status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user_id = force_str(urlsafe_base64_decode(uidb64))
-            user = AuthorAccount.objects.get(pk=user_id)
-        except (TypeError, ValueError, OverflowError, AuthorAccount.DoesNotExist):
-            return Response({'error': 'Invalid user or token.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+#         try:
+#             user_id = force_str(urlsafe_base64_decode(uidb64))
+#             user = AuthorAccount.objects.get(pk=user_id)
+#         except (TypeError, ValueError, OverflowError, AuthorAccount.DoesNotExist):
+#             return Response({'error': 'Invalid user or token.'},
+#                             status=status.HTTP_400_BAD_REQUEST)
 
-        if not default_token_generator.check_token(user, token):
-            return Response({'error': 'Invalid or expired token.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+#         if not default_token_generator.check_token(user, token):
+#             return Response({'error': 'Invalid or expired token.'},
+#                             status=status.HTTP_400_BAD_REQUEST)
 
-        new_password = request.data.get('new_password')
-        if not new_password:
-            return Response({'error': 'New password is required.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+#         new_password = request.data.get('new_password')
+#         if not new_password:
+#             return Response({'error': 'New password is required.'},
+#                             status=status.HTTP_400_BAD_REQUEST)
 
-        user.set_password(new_password)
-        user.save()
+#         user.set_password(new_password)
+#         user.save()
 
-        return Response({'detail': 'Password reset successful.'},
-                        status=status.HTTP_200_OK)
+#         return Response({'detail': 'Password reset successful.'},
+#                         status=status.HTTP_200_OK)
 
 
 
