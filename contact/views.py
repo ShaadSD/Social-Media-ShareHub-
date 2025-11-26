@@ -6,6 +6,7 @@ from django.conf import settings
 from . import serializers
 from user.models import AuthorAccount
 import logging
+from django.core.mail import EmailMultiAlternatives
 
 class ContactUsViewset(APIView):
     serializer_class = serializers.ContactUsSerializer
@@ -29,28 +30,18 @@ class ContactUsViewset(APIView):
     def send_email(self, contact_data):
         subject = 'Received Contact Message'
         message = f"""
-        Hello,
+            You have received a new contact message.
 
-        You have received a new contact message.
-
-        Details:
-        Name: {contact_data.get('name')}
-        Email: {contact_data.get('email')}
-        Message: {contact_data.get('message')}
-
-        Best Regards,
-        ShareHub Team
+            Name: {contact_data.get('name')}
+            Email: {contact_data.get('email')}
+            Message: {contact_data.get('message')}
         """
 
-        recipient_email = settings.EMAIL_HOST_USER
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[settings.DEFAULT_FROM_EMAIL]
+        )
 
-        try:
-            send_mail(
-                subject,
-                message,
-                settings.EMAIL_HOST_USER,
-                [recipient_email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            logging.error(f"Error sending email: {e}")
+        email.send()
