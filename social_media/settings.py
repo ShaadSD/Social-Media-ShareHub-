@@ -149,7 +149,8 @@ DATABASES = {
 DATABASES = {
     'default': dj_database_url.config(
 
-        default='postgresql://social_media_id1h_user:paTm29JbkHu9B2OzjkwjfS1nsKCIg4A5@dpg-d4jd0avdiees738lse60-a.oregon-postgres.render.com/social_media_id1h',
+        default='postgresql://social_media_sa7k_user:iaPg5BzzTTy4zI514hIq3lLdtTDLpCOd@dpg-d5edc7dactks73c53rj0-a.oregon-postgres.render.com/social_media_sa7k',
+        
     )
 }
 # Password validation
