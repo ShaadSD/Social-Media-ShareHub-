@@ -130,31 +130,40 @@ WSGI_APPLICATION = 'social_media.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
-    }
-}
-DATABASES = {
-    'default': dj_database_url.config(
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': env('DB_NAME'),
+#         'USER': env('DB_USER'),
+#         'PASSWORD': env('DB_PASSWORD'),
+#         'HOST': env('DB_HOST'),
+#         'PORT': env('DB_PORT'),
+#     }
+# }
+# DATABASES = {
+#     'default': dj_database_url.config(
 
-        default='postgresql://social_media_sa7k_user:iaPg5BzzTTy4zI514hIq3lLdtTDLpCOd@dpg-d5edc7dactks73c53rj0-a.oregon-postgres.render.com/social_media_sa7k',
+#         default='postgresql://social_media_sa7k_user:iaPg5BzzTTy4zI514hIq3lLdtTDLpCOd@dpg-d5edc7dactks73c53rj0-a.oregon-postgres.render.com/social_media_sa7k',
         
-    )
-}
+#     )
+# }
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+
+DATABASES = {
+    'default': dj_database_url.parse(
+        os.environ.get("DATABASE_URL"),
+        conn_max_age=600,
+        ssl_require=True,
+    )
+}
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
